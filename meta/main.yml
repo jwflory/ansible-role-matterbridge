@@ -1,7 +1,8 @@
 ---
 galaxy_info:
+  role_name: matterbridge
   author: "Justin W. Flory"
-  description: Deploy Matterbridge server on CentOS/RHEL 7.x systems
+  description: Deploy Matterbridge server on CentOS/RHEL
 
   license: BSD-3-Clause
 
