@@ -1,0 +1,4 @@
+---
+# encrypted variables to store in Ansible role
+
+vault_slack_api_token: ""

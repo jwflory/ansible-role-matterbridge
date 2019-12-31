@@ -1,0 +1,74 @@
+---
+# tasks file for matterbridge
+- name: import Vault-encrypted variables
+  include_vars: vault.yml
+
+- name: install golang (v1.8+ required)
+  package:
+    state: present
+    name: golang
+
+- name: create matterbridge system user
+  user:
+    name: matterbridge
+    comment: "system user to run 42wim/matterbridge - do not use"
+    system: yes
+    home: "/etc/matterbridge"
+    create_home: no
+
+# target_user is a global variable I define in an Ansible VCS repository. This
+# task will be skipped if the `target_user` variable is not defined.
+- name: add target user to matterbridge group
+  user:
+    name: "{{ target_user }}"
+    groups: matterbridge
+    append: yes
+  when: target_user is defined
+
+- name: create/set permissions on /etc/matterbridge static config directory
+  file:
+    state: directory
+    recurse: yes
+    path: "/etc/matterbridge"
+    mode: 0755
+    owner: matterbridge
+    group: matterbridge
+    setype: etc_t
+    seuser: system_u
+
+# Manually retrieve a sha512sum hash for a new release when updating this task.
+- name: download matterbridge binary
+  get_url:
+    url: "https://github.com/42wim/matterbridge/releases/download/v{{ matterbridge_config.version }}/matterbridge-{{ matterbridge_config.version }}-linux-64bit"
+    checksum: "sha256:{{ matterbridge_config.binary_checksum }}"
+    backup: yes
+    dest: /usr/bin/matterbridge
+    mode: 0755
+    setype: bin_t
+    seuser: system_u
+  notify: restart matterbridge
+
+- name: install /etc/matterbridge/matterbridge.toml
+  template:
+    src: matterbridge.toml
+    dest: "/etc/matterbridge/matterbridge.toml"
+    mode: 0640
+    owner: matterbridge
+    group: matterbridge
+    setype: etc_t
+    seuser: system_u
+  notify: restart matterbridge
+
+- name: add /usr/lib/systemd/system/matterbridge.service (systemd unit file)
+  copy:
+    src: matterbridge.service
+    dest: "/usr/lib/systemd/system/matterbridge.service"
+    mode: 0644
+    seuser: system_u
+    setype: systemd_unit_file_t
+
+- name: start/enable matterbridge.service
+  service:
+    name: matterbridge
+    state: started
+    enabled: yes

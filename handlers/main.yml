@@ -1,0 +1,6 @@
+---
+# handlers file for matterbridge
+- name: restart matterbridge
+  service:
+    name: matterbridge
+    state: restarted
